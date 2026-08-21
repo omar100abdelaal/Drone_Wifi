@@ -1,0 +1,15 @@
+[Unit]
+Description=Drone Control & Video Streaming Service
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=drone-pi
+WorkingDirectory=/home/drone-pi/raspberry_pi
+ExecStart=/bin/bash /home/drone-pi/raspberry_pi/start_all.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+{
+    "control_port": 5000,
+    "video_port": 5001,
+    "video_width": 1920,
+    "video_height": 1080,
+    "video_quality": 75,
+    "uart_port": "/dev/serial0",
+    "uart_baud": 115200,
+    "failsafe_timeout_ms": 300
+}

@@ -1,0 +1,10 @@
+{
+    "raspberry_pi_ip": "192.168.50.1",
+    "control_port": 5000,
+    "control_rate": 50,
+    "simulation_mode": false,
+    "dead_zone": 0.1,
+    "video_port": 5001,
+    "gamepad_index": 0,
+    "ds4windows_osc_port": 9002
+}

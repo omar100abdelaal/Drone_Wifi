@@ -12,6 +12,7 @@ class ControlState:
         self.kill_motors = False
         self.flight_mode = "STABILIZE"
         self.sequence = 0
+        self.session_id = int(time.time() * 1000)
         self.gamepad_connected = False
         self.drone_connected = False
         self.video_live = False
@@ -88,6 +89,7 @@ class ControlState:
                 "kill_motors": self.kill_motors,
                 "flight_mode": self.flight_mode,
                 "sequence": self.sequence,
+                "session_id": self.session_id,
                 "timestamp": int(time.time() * 1000)
             }
 

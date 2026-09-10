@@ -41,6 +41,8 @@ def main():
     print(f"UDP Control Receiver Listening on Port {port}...")
     
     last_seq = -1
+    last_session_id = None
+    last_addr = None
     failsafe_triggered = False
 
     try:
@@ -49,8 +51,17 @@ def main():
                 data, addr = sock.recvfrom(1024)
                 packet = json.loads(data.decode('utf-8'))
                 
-                # Check sequence number to ignore late/out-of-order packets
+                # Check sequence number & session ID to handle client app restarts
                 seq = packet.get("sequence", 0)
+                session_id = packet.get("session_id", None)
+                
+                # Detect client restart or sequence reset (e.g. app restarted, session ID changed, or port changed)
+                if session_id != last_session_id or addr != last_addr or seq <= 2 or (last_seq - seq) > 50:
+                    last_seq = -1
+                    last_session_id = session_id
+                    last_addr = addr
+                    print(f"[UDP Receiver] Client session reset detected from {addr}. Sequence counter reset.")
+
                 if seq > last_seq:
                     last_seq = seq
                     

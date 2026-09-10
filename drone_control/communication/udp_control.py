@@ -58,32 +58,38 @@ class UDPControlThread(QThread):
                 self.packet_sent.emit(packet)
                 print(f"[UDP Send] Sent packet to {target_ip}:{self.port}")
                 
-                # Receive telemetry reply (non-blocking)
+                # Receive telemetry reply (drain buffer for latest packet)
+                latest_reply = None
                 try:
-                    self.sock.settimeout(0.015)  # 15ms timeout for telemetry response
-                    reply_data, _ = self.sock.recvfrom(1024)
-                    telemetry = json.loads(reply_data.decode('utf-8'))
-                    print(f"[UDP Telemetry] Received: {telemetry}")
-                    print(f"[UDP Telemetry] pi_pixhawk_connected: {telemetry.get('pi_pixhawk_connected', False)}")
-                    
-                    t_stamp = telemetry.get("timestamp", 0)
-                    if t_stamp > 0:
-                        latency = int(time.time() * 1000) - t_stamp
-                        self.control_state.latency = max(0, latency)
-                    
-                    self.control_state.altitude = telemetry.get("altitude", 0.0)
-                    self.control_state.battery_voltage = telemetry.get("battery_voltage", 0.0)
-                    # Convert percent to battery status percentage
-                    pct = telemetry.get("battery_percent", 0)
-                    self.control_state.battery = float(pct) if pct is not None else 0.0
-                    self.control_state.pi_pixhawk_connected = telemetry.get("pi_pixhawk_connected", False)
-                    self.control_state.drone_connected = True
-                    self.control_state.last_telemetry_time = time.time()
+                    while True:
+                        self.sock.settimeout(0.005)
+                        reply_data, _ = self.sock.recvfrom(1024)
+                        latest_reply = reply_data
                 except socket.timeout:
-                    # Packet drop or Pi offline
                     pass
                 except Exception as e:
                     print(f"Telemetry Receive Error: {e}")
+
+                if latest_reply is not None:
+                    try:
+                        telemetry = json.loads(latest_reply.decode('utf-8'))
+                        print(f"[UDP Telemetry] Received: {telemetry}")
+                        print(f"[UDP Telemetry] pi_pixhawk_connected: {telemetry.get('pi_pixhawk_connected', False)}")
+                        
+                        t_stamp = telemetry.get("timestamp", 0)
+                        if t_stamp > 0:
+                            latency = int(time.time() * 1000) - t_stamp
+                            self.control_state.latency = max(0, latency)
+                        
+                        self.control_state.altitude = telemetry.get("altitude", 0.0)
+                        self.control_state.battery_voltage = telemetry.get("battery_voltage", 0.0)
+                        pct = telemetry.get("battery_percent", 0)
+                        self.control_state.battery = float(pct) if pct is not None else 0.0
+                        self.control_state.pi_pixhawk_connected = telemetry.get("pi_pixhawk_connected", False)
+                        self.control_state.drone_connected = True
+                        self.control_state.last_telemetry_time = time.time()
+                    except Exception as e:
+                        print(f"Telemetry Parsing Error: {e}")
             except Exception as e:
                 print(f"UDP Send Error: {e}")
 

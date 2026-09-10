@@ -43,7 +43,7 @@ class ControlState:
             if self.arm:
                 self.throttle = max(0.14, min(1.0, throttle))
             else:
-                self.throttle = 0.0
+                self.throttle = max(0.0, min(1.0, throttle))
                 
             self.throttle_input = throttle_input
 

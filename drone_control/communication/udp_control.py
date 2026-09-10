@@ -15,12 +15,24 @@ class UDPControlThread(QThread):
         self.simulation_mode = simulation_mode
         self.running = False
         
-        # Create UDP socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # Set socket timeout for non-blocking if needed
-        self.sock.settimeout(0.1)
+        try:
+            # Create UDP socket
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Allow address reuse
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # Bind to random port to receive replies
+            self.sock.bind(('0.0.0.0', 0))
+            local_port = self.sock.getsockname()[1]
+            print(f"[UDP Socket] Bound to local port: {local_port}")
+            # Set socket timeout for non-blocking if needed
+            self.sock.settimeout(0.1)
+            print(f"[UDP Socket] Initialization complete")
+        except Exception as e:
+            print(f"[UDP Socket] Initialization error: {e}")
+            raise
 
     def run(self):
+        print(f"[UDP Thread] Starting UDP control thread")
         self.running = True
         while self.running:
             start_time = time.time()
@@ -44,12 +56,15 @@ class UDPControlThread(QThread):
                 target_ip = "127.0.0.1" if self.simulation_mode else self.ip
                 self.sock.sendto(data, (target_ip, self.port))
                 self.packet_sent.emit(packet)
+                print(f"[UDP Send] Sent packet to {target_ip}:{self.port}")
                 
                 # Receive telemetry reply (non-blocking)
                 try:
                     self.sock.settimeout(0.015)  # 15ms timeout for telemetry response
                     reply_data, _ = self.sock.recvfrom(1024)
                     telemetry = json.loads(reply_data.decode('utf-8'))
+                    print(f"[UDP Telemetry] Received: {telemetry}")
+                    print(f"[UDP Telemetry] pi_pixhawk_connected: {telemetry.get('pi_pixhawk_connected', False)}")
                     
                     t_stamp = telemetry.get("timestamp", 0)
                     if t_stamp > 0:

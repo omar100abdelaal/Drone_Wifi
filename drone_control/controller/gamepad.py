@@ -135,9 +135,9 @@ class GamepadThread(QThread):
             new_throttle = current_throttle + (throttle_input * throttle_rate * dt)
             new_throttle = max(0.0, min(1.0, new_throttle))
 
-            # Force axes to 0 when disarmed so UI doesn't move and drone receives neutral signals
-            if not self.control_state.arm:
-                yaw, roll, pitch, new_throttle, throttle_input = 0.0, 0.0, 0.0, 0.0, 0.0
+            # Allow stick movement for radio calibration while disarmed
+            # if not self.control_state.arm:
+            #     yaw, roll, pitch, new_throttle, throttle_input = 0.0, 0.0, 0.0, 0.0, 0.0
 
             if not getattr(self.control_state, "keyboard_active", False):
                 self.control_state.update_axes(roll, pitch, yaw, new_throttle, throttle_input)

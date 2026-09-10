@@ -17,18 +17,33 @@ class SpeedyBeeUART:
         self._heartbeat_thread = None
         self._heartbeat_running = False
         
-        try:
-            # Establish MAVLink connection
-            self.mav_connection = mavutil.mavlink_connection(self.port, baud=self.baudrate)
-            # Wait for heartbeat to verify connection is alive
-            print(f"Waiting for ArduPilot MAVLink heartbeat on {self.port} at {self.baudrate}...")
-            # We set a small timeout so it doesn't block forever if offline
-            self.mav_connection.wait_heartbeat(timeout=3.0)
-            print("MAVLink Heartbeat received! Flight controller connected.")
-            # Start sending heartbeats so ArduPilot accepts our RC overrides
-            self._start_heartbeat()
-        except Exception as e:
-            print(f"MAVLink Connection Warning: Could not connect on {self.port}. Running in DRY-RUN mode. ({e})")
+        # Retry loop: keep trying until we get a heartbeat.
+        # This handles the case where the Pi boots faster than the SpeedyBee
+        # (e.g. after a power cycle), which would previously cause a 3-second
+        # timeout and then fall into "DRY-RUN mode" permanently.
+        max_attempts = 30  # 30 × 5 seconds = up to 2.5 minutes
+        attempt = 0
+        connected = False
+        while attempt < max_attempts and not connected:
+            try:
+                attempt += 1
+                print(f"[MAVLink] Attempt {attempt}/{max_attempts}: Connecting on {self.port} at {self.baudrate} baud...")
+                self.mav_connection = mavutil.mavlink_connection(self.port, baud=self.baudrate)
+                hb = self.mav_connection.wait_heartbeat(timeout=5.0)
+                if hb is not None:
+                    print("[MAVLink] Heartbeat received! Flight controller connected.")
+                    self._start_heartbeat()
+                    connected = True
+                else:
+                    print("[MAVLink] No heartbeat yet — retrying in 2 seconds...")
+                    import time as _time
+                    _time.sleep(2.0)
+            except Exception as e:
+                print(f"[MAVLink] Connection error (attempt {attempt}): {e} — retrying in 2 seconds...")
+                import time as _time
+                _time.sleep(2.0)
+        if not connected:
+            print(f"[MAVLink] WARNING: Could not connect after {max_attempts} attempts. Running in DRY-RUN mode.")
 
     def _start_heartbeat(self):
         """Start a background thread that sends MAVLink HEARTBEAT at 1Hz.

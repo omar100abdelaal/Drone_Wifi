@@ -5,9 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=drone-pi
-WorkingDirectory=/home/drone-pi/raspberry_pi
-ExecStart=/bin/bash /home/drone-pi/raspberry_pi/start_all.sh
+User=pi
+Group=pi
+SupplementaryGroups=dialout
+WorkingDirectory=/home/pi/drone_wifi
+ExecStart=/bin/bash /home/pi/drone_wifi/start_all.sh
 Restart=always
 RestartSec=3
 

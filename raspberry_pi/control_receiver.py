@@ -77,8 +77,9 @@ def main():
                     try:
                         resp_data = json.dumps(telemetry).encode('utf-8')
                         sock.sendto(resp_data, addr)
+                        print(f"[Telemetry Reply] Sent to {addr}: {telemetry}")
                     except Exception as e:
-                        pass
+                        print(f"[Telemetry Reply Error] {e}")
                     
             except socket.timeout:
                 # No packet received in the timeout window, proceed to check failsafe
